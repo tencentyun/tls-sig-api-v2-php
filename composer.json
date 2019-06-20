@@ -1,5 +1,5 @@
 {
-    "require": { }
+    "require": { },
     "name": "Tencent/tls-sig-api-v2",
     "description": "tls-sig-api-v2 适用于腾讯云通信生成用户账号签名。",
     "type": "library",
