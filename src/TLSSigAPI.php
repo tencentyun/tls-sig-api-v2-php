@@ -155,7 +155,6 @@ class TLSSigAPI {
             $pre_level = error_reporting(E_ERROR);
             $uncompressed_sig = gzuncompress($compressed_sig);
             error_reporting($pre_level);
-            echo "uncompressed_sig:" . $uncompressed_sig;
             if ($uncompressed_sig === false) {
                 throw new \Exception('gzuncompress error');
             }
