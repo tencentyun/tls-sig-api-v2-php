@@ -10,7 +10,33 @@ $expire = 0;
 $err_msg = '';
 $ret = $api->verifySig($sig, 'xiaojun', $init_time, $expire, $err_msg);
 if (!$ret) {
-    echo $err_msg;
+    echo $err_msg . "\n";
 } else {
     echo "verify ok expire $expire init time $init_time\n";
+}
+$userbuf = '';
+$ret = $api->verifySigWithUserBuf($sig, 'xiaojun', $init_time, $expire,$userbuf, $err_msg);
+if (!$ret) {
+    echo $err_msg . "\n";
+} else {
+    echo "verify ok expire $expire init time $init_time userbuf $userbuf\n";
+}
+
+$sig = $api->genSigWithUserBuf('xiaojun', 86400*180, 'abc');
+echo $sig . "\n";
+$init_time = 0;
+$expire = 0;
+$err_msg = '';
+$ret = $api->verifySig($sig, 'xiaojun', $init_time, $expire, $err_msg);
+if (!$ret) {
+    echo $err_msg . "\n";
+} else {
+    echo "verify ok expire $expire init time $init_time\n";
+}
+$userbuf = '';
+$ret = $api->verifySigWithUserBuf($sig, 'xiaojun', $init_time, $expire,$userbuf, $err_msg);
+if (!$ret) {
+    echo $err_msg . "\n";
+} else {
+    echo "verify ok expire $expire init time $init_time userbuf $userbuf\n";
 }

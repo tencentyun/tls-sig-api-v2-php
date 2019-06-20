@@ -54,24 +54,32 @@ class TLSSigAPI {
      * @param $identifier 用户名，utf-8 编码
      * @param $curr_time 当前生成 sig 的 unix 时间戳
      * @param $expire 有效期，单位秒
+     * @param $base64_userbuf base64 编码后的 userbuf
+     * @param $userbuf_enabled 是否开启 userbuf
      * @return string base64 后的 sig
      */
-    private function hmacsha256($identifier, $curr_time, $expire) {
+    private function hmacsha256($identifier, $curr_time, $expire, $base64_userbuf, $userbuf_enabled) {
         $content_to_be_signed = "TLS.identifier:" . $identifier . "\n"
             . "TLS.sdkappid:" . $this->sdkappid . "\n"
             . "TLS.time:" . $curr_time . "\n"
             . "TLS.expire:" . $expire . "\n";
+        if (true == $userbuf_enabled) {
+            $content_to_be_signed .= "TLS.userbuf:" . $base64_userbuf . "\n";
+        }
         return base64_encode(hash_hmac( 'sha256', $content_to_be_signed, $this->key, true));
     }
 
     /**
-     * 生成签名
+     * 生成签名。
+     *
      * @param $identifier 用户账号
      * @param int $expire 过期时间，单位秒，默认 180 天
+     * @param $userbuf base64 编码后的 userbuf
+     * @param $userbuf_enabled 是否开启 userbuf
      * @return string 签名字符串
      * @throws \Exception
      */
-    public function genSig($identifier, $expire = 15552000) {
+    private function __genSig($identifier, $expire, $userbuf, $userbuf_enabled) {
         $curr_time = time();
         $sig_array = Array(
             'TLS.ver' => '2.0',
@@ -81,7 +89,13 @@ class TLSSigAPI {
             'TLS.time' => intval($curr_time)
         );
 
-        $sig_array['TLS.sig'] = $this->hmacsha256($identifier, $curr_time, $expire);
+        $base64_userbuf = '';
+        if (true == $userbuf_enabled) {
+            $base64_userbuf = base64_encode($userbuf);
+            $sig_array['TLS.userbuf'] = strval($base64_userbuf);
+        }
+
+        $sig_array['TLS.sig'] = $this->hmacsha256($identifier, $curr_time, $expire, $base64_userbuf, $userbuf_enabled);
         if ($sig_array['TLS.sig'] === false) {
             throw new \Exception('base64_encode error');
         }
@@ -96,17 +110,45 @@ class TLSSigAPI {
         return $this->base64_url_encode($compressed);
     }
 
+
     /**
-     * 验证签名
+     * 生成签名
+     *
+     * @param $identifier 用户账号
+     * @param int $expire 过期时间，单位秒，默认 180 天
+     * @return string 签名字符串
+     * @throws \Exception
+     */
+    public function genSig($identifier, $expire=86400*180) {
+        return $this->__genSig($identifier, $expire, '', false);
+    }
+
+    /**
+     * 带 userbuf 生成签名。
+     * @param $identifier 用户账号
+     * @param int $expire 过期时间，单位秒，默认 180 天
+     * @param string $userbuf 用户数据
+     * @return string 签名字符串
+     * @throws \Exception
+     */
+    public function genSigWithUserBuf($identifier, $expire, $userbuf) {
+        return $this->__genSig($identifier, $expire, $userbuf, true);
+    }
+
+
+    /**
+     * 验证签名。
+     *
      * @param string $sig 签名内容
      * @param string $identifier 需要验证用户名，utf-8 编码
-     * @param int $init_time 生成时间
-     * @param int $expire_time 有效期 3600 秒
+     * @param int $init_time 返回的生成时间，unix 时间戳
+     * @param int $expire_time 返回的有效期，单位秒
+     * @param string $userbuf 返回的用户数据
      * @param string $error_msg 失败时的错误信息
      * @return boolean 验证是否成功
      * @throws \Exception
      */
-    public function verifySig($sig, $identifier, &$init_time, &$expire_time, &$error_msg) {
+    private function __verifySig($sig, $identifier, &$init_time, &$expire_time, &$userbuf, &$error_msg) {
         try {
             $error_msg = '';
             $compressed_sig = $this->base64_url_decode($sig);
@@ -114,31 +156,38 @@ class TLSSigAPI {
             if ($uncompressed_sig === false) {
                 throw new \Exception('gzuncompress error');
             }
-            $sig_array = json_decode($uncompressed_sig);
-            if ($sig_array == false) {
+            $sig_doc = json_decode($uncompressed_sig);
+            if ($sig_doc == false) {
                 throw new \Exception('json_decode error');
             }
-            $sig_array = (array)$sig_array;
-            if ($sig_array['TLS.identifier'] !== $identifier) {
+            $sig_doc = (array)$sig_doc;
+            if ($sig_doc['TLS.identifier'] !== $identifier) {
                 throw new \Exception("identifier dosen't match");
             }
-            if ($sig_array['TLS.sdkappid'] != $this->sdkappid) {
+            if ($sig_doc['TLS.sdkappid'] != $this->sdkappid) {
                 throw new \Exception("sdkappid dosen't match");
             }
-            $sig = $sig_array['TLS.sig'];
+            $sig = $sig_doc['TLS.sig'];
             if ($sig == false) {
                 throw new \Exception('sig field is missing');
             }
 
-            $init_time = $sig_array['TLS.time'];
-            $expire_time = $sig_array['TLS.expire'];
+            $init_time = $sig_doc['TLS.time'];
+            $expire_time = $sig_doc['TLS.expire'];
 
             $curr_time = time();
             if ($curr_time > $init_time+$expire_time) {
                 throw new \Exception('sig expired');
             }
 
-            $sigCalculated = $this->hmacsha256($identifier, $init_time, $expire_time);
+            $userbuf_enabled = false;
+            $base64_userbuf = '';
+            if (isset($sig_doc['TLS.userbuf'])) {
+                $base64_userbuf = $sig_doc['TLS.userbuf'];
+                $userbuf = base64_decode($base64_userbuf);
+                $userbuf_enabled = true;
+            }
+            $sigCalculated = $this->hmacsha256($identifier, $init_time, $expire_time, $base64_userbuf, $userbuf_enabled);
 
             if ($sig != $sigCalculated) {
                 throw new \Exception('verify failed');
@@ -149,5 +198,37 @@ class TLSSigAPI {
             $error_msg = $ex->getMessage();
             return false;
         }
+    }
+
+
+    /**
+     * 带 userbuf 验证签名。
+     *
+     * @param string $sig 签名内容
+     * @param string $identifier 需要验证用户名，utf-8 编码
+     * @param int $init_time 返回的生成时间，unix 时间戳
+     * @param int $expire_time 返回的有效期，单位秒
+     * @param string $error_msg 失败时的错误信息
+     * @return boolean 验证是否成功
+     * @throws \Exception
+     */
+    public function verifySig($sig, $identifier, &$init_time, &$expire_time, &$error_msg) {
+        $userbuf = '';
+        return $this->__verifySig($sig, $identifier, $init_time, $expire_time, $userbuf, $error_msg);
+    }
+
+    /**
+     * 验证签名
+     * @param string $sig 签名内容
+     * @param string $identifier 需要验证用户名，utf-8 编码
+     * @param int $init_time 返回的生成时间，unix 时间戳
+     * @param int $expire_time 返回的有效期，单位秒
+     * @param string $userbuf 返回的用户数据
+     * @param string $error_msg 失败时的错误信息
+     * @return boolean 验证是否成功
+     * @throws \Exception
+     */
+    public function verifySigWithUserBuf($sig, $identifier, &$init_time, &$expire_time, &$userbuf, &$error_msg) {
+        return $this->__verifySig($sig, $identifier, $init_time, $expire_time, $userbuf, $error_msg);
     }
 }
