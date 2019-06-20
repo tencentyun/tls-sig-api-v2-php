@@ -6,7 +6,7 @@ if (version_compare(PHP_VERSION, '5.1.2') < 0) {
     trigger_error('need php 5.1.2 or newer', E_USER_ERROR);
 }
 
-class TLSSigAPI {
+class TLSSigAPIv2 {
 
     private $key = false;
     private $sdkappid = 0;

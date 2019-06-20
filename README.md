@@ -14,16 +14,16 @@
 ```
 
 ### 源码集成
-将 `TLSSigAPI.php` 下载至工程中即可。
+将 `TLSSigAPIv2.php` 下载至工程中即可。
 
 ## 使用
 ``` php
 <?php
 
 require 'vendor/autoload.php'
-// require_once "../src/TLSSigAPI.php"; // 源码集成使用相对路径 
+// require_once "../src/TLSSigAPIv2.php"; // 源码集成使用相对路径 
 
-$api = new \Tencent\TLSSigAPI(1400000000, '5bd2850fff3ecb11d7c805251c51ee463a25727bddc2385f3fa8bfee1bb93b5e');
+$api = new \Tencent\TLSSigAPIv2(1400000000, '5bd2850fff3ecb11d7c805251c51ee463a25727bddc2385f3fa8bfee1bb93b5e');
 $sig = $api->genSig('xiaojun');
 echo $sig . "\n";
 ```
