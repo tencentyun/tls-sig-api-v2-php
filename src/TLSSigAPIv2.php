@@ -48,7 +48,28 @@ class TLSSigAPIv2 {
         }
         return $result;
     }
-
+    public function getUserBuf($account,$dwAuthID,$dwExpTime,$dwPrivilegeMap,$dwAccountType) {
+        //视频校验位需要用到的字段
+        /*
+            cVer    unsigned char/1 版本号，填0
+            wAccountLen unsigned short /2   第三方自己的帐号长度
+            buffAccount wAccountLen 第三方自己的帐号字符
+            dwSdkAppid  unsigned int/4  sdkappid
+            dwAuthId    unsigned int/4  群组号码
+            dwExpTime   unsigned int/4  过期时间 （当前时间 + 有效期（单位：秒，建议300秒））
+            dwPrivilegeMap  unsigned int/4  权限位
+            dwAccountType   unsigned int/4  第三方帐号类型
+        */
+        $userbuf = pack('C1', '0');                     //cVer  unsigned char/1 版本号，填0
+        $userbuf .= pack('n',strlen($account));          //wAccountLen   unsigned short /2   第三方自己的帐号长度
+        $userbuf .= pack('a'.strlen($account),$account);  //buffAccount   wAccountLen 第三方自己的帐号字符
+        $userbuf .= pack('N',$this->sdkappid);          //dwSdkAppid    unsigned int/4  sdkappid
+        $userbuf .= pack('N',$dwAuthID);                  //dwAuthId  unsigned int/4  群组号码/音视频房间号
+        $userbuf .= pack('N', $dwExpTime);        //dwExpTime unsigned int/4  过期时间 （当前时间 + 有效期（单位：秒，建议300秒））
+        $userbuf .= pack('N', $dwPrivilegeMap);          //dwPrivilegeMap unsigned int/4  权限位       
+        $userbuf .= pack('N', $dwAccountType);                       //dwAccountType  unsigned int/4 
+        return $userbuf;
+    }
     /**
      * 使用 hmac sha256 生成 sig 字段内容，经过 base64 编码
      * @param $identifier 用户名，utf-8 编码
