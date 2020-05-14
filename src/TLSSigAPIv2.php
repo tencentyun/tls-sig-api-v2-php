@@ -54,12 +54,12 @@ class TLSSigAPIv2 {
     * @param account 用户名
     * @param dwSdkappid sdkappid
     * @param dwAuthID  数字房间号
-    * @param dwExpTime 过期时间：该权限加密串的过期时间，建议300秒，300秒内拿到该签名，并且发起进房间操作
+    * @param dwExpTime 过期时间：该权限加密串的过期时间. 过期时间=now+dwExpTime
     * @param dwPrivilegeMap 用户权限，255表示所有权限
     * @param dwAccountType 用户类型,默认为0
     * @return userbuf string  返回的userbuf
     */
-    public function getUserBuf($account,$dwAuthID,$dwExpTime,$dwPrivilegeMap,$dwAccountType) {
+    private function __genUserBuf($account,$dwAuthID,$dwExpTime,$dwPrivilegeMap,$dwAccountType) {
         //视频校验位需要用到的字段
         /*
             cVer    unsigned char/1 版本号，填0
@@ -76,7 +76,8 @@ class TLSSigAPIv2 {
         $userbuf .= pack('a'.strlen($account),$account);  //buffAccount   wAccountLen 第三方自己的帐号字符
         $userbuf .= pack('N',$this->sdkappid);          //dwSdkAppid    unsigned int/4  sdkappid
         $userbuf .= pack('N',$dwAuthID);                  //dwAuthId  unsigned int/4  群组号码/音视频房间号
-        $userbuf .= pack('N', $dwExpTime);        //dwExpTime unsigned int/4  过期时间 （当前时间 + 有效期（单位：秒，建议300秒））
+        $expire = $dwExpTime + time();
+        $userbuf .= pack('N', $expire);        //dwExpTime unsigned int/4  过期时间 （当前时间 + 有效期（单位：秒，建议300秒））
         $userbuf .= pack('N', $dwPrivilegeMap);          //dwPrivilegeMap unsigned int/4  权限位       
         $userbuf .= pack('N', $dwAccountType);                       //dwAccountType  unsigned int/4 
         return $userbuf;
@@ -163,7 +164,9 @@ class TLSSigAPIv2 {
      * @return string 签名字符串
      * @throws \Exception
      */
-    public function genSigWithUserBuf($identifier, $expire, $userbuf) {
+    public function genSigWithUserBuf($identifier, $expire, $roomnum,$privilege) {
+        $userbuf = $this->__genUserBuf($identifier,$roomnum,$expire_time,$privilege,0);
+        echo $userbuf . "\n";
         return $this->__genSig($identifier, $expire, $userbuf, true);
     }
 
