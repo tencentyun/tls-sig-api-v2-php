@@ -3,7 +3,7 @@
 require_once "../src/TLSSigAPIv2.php";
 
 $api = new \Tencent\TLSSigAPIv2(1400000000, '5bd2850fff3ecb11d7c805251c51ee463a25727bddc2385f3fa8bfee1bb93b5e');
-$sig = $api->genSig('xiaojun');
+$sig = $api->genUserSig('xiaojun');
 echo $sig . "\n";
 $init_time = 0;
 $expire = 0;
@@ -21,7 +21,7 @@ if (!$ret) {
 } else {
     echo "verify ok expire $expire init time $init_time userbuf $userbuf\n";
 }
-$sig = $api->genSigWithUserBuf('xiaojun', 86400*180, 10000,255);
+$sig = $api->genPrivateMapKey('xiaojun', 86400*180, 10000,255);
 echo $sig . "\n";
 $init_time = 0;
 $expire = 0;
