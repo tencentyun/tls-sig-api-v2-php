@@ -23,6 +23,8 @@ if ( !$ret ) {
 }
 $sig = $api->genPrivateMapKey( 'xiaojun', 86400*180, 10000, 255 );
 echo $sig . '\n';
+$sig = $api->genPrivateMapKeyWithStringRoomID( 'xiaojun', 86400*180, "aaa", 255 );
+echo $sig . '\n';
 $init_time = 0;
 $expire = 0;
 $err_msg = '';
