@@ -4,7 +4,7 @@ require_once '../src/TLSSigAPIv2.php';
 
 $api = new \Tencent\TLSSigAPIv2( 1400000000, '5bd2850fff3ecb11d7c805251c51ee463a25727bddc2385f3fa8bfee1bb93b5e' );
 $sig = $api->genUserSig( 'xiaojun' );
-echo $sig . '\n';
+echo $sig . "\n";
 $init_time = 0;
 $expire = 0;
 $err_msg = '';
