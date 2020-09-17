@@ -181,12 +181,12 @@ class TLSSigAPIv2 {
     */
 
     private function hmacsha256( $identifier, $curr_time, $expire, $base64_userbuf, $userbuf_enabled ) {
-        $content_to_be_signed = 'TLS.identifier:' . $identifier . '\n'
-        . 'TLS.sdkappid:' . $this->sdkappid . '\n'
-        . 'TLS.time:' . $curr_time . '\n'
-        . 'TLS.expire:' . $expire . '\n';
+        $content_to_be_signed = 'TLS.identifier:' . $identifier . "\n"
+        . 'TLS.sdkappid:' . $this->sdkappid . "\n"
+        . 'TLS.time:' . $curr_time . "\n"
+        . 'TLS.expire:' . $expire . "\n";
         if ( true == $userbuf_enabled ) {
-            $content_to_be_signed .= 'TLS.userbuf:' . $base64_userbuf . '\n';
+            $content_to_be_signed .= 'TLS.userbuf:' . $base64_userbuf . "\n";
         }
         return base64_encode( hash_hmac( 'sha256', $content_to_be_signed, $this->key, true ) );
     }
