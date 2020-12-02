@@ -52,7 +52,6 @@ class TLSSigAPIv2 {
 
     public function genPrivateMapKey( $userid, $expire, $roomid, $privilegeMap ) {
         $userbuf = $this->__genUserBuf( $userid, $roomid, $expire, $privilegeMap, 0, '' );
-        echo $userbuf . '\n';
         return $this->__genSig( $userid, $expire, $userbuf, true );
     }
     /**
@@ -82,7 +81,6 @@ class TLSSigAPIv2 {
 
     public function genPrivateMapKeyWithStringRoomID( $userid, $expire, $roomstr, $privilegeMap ) {
         $userbuf = $this->__genUserBuf( $userid, 0, $expire, $privilegeMap, 0, $roomstr );
-        echo $userbuf . '\n';
         return $this->__genSig( $userid, $expire, $userbuf, true );
     }
 
