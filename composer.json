@@ -3,7 +3,7 @@
     "name": "tencent/tls-sig-api-v2",
     "description": "tls-sig-api-v2 适用于腾讯云通信生成用户账号签名。",
     "type": "library",
-    "keywords": [ "tencent", "im" ],
+    "keywords": [ "tencent", "im", "trtc" ],
     "homepage": "https://github.com/tencentyun/tls-sig-api-v2-php",
     "license": "MIT",
     "authors": [
