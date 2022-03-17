@@ -21,6 +21,16 @@ class TLSSigAPIv2 {
     * @throws \Exception
     */
 
+    /**
+     * Function: Used to issue UserSig that is required by the TRTC and IM services.
+     *
+     * Parameter description:
+     * @param userid - User ID. The value can be up to 32 bytes in length and contain letters (a-z and A-Z), digits (0-9), underscores (_), and hyphens (-).
+     * @param expire - UserSig expiration time, in seconds. For example, 86400 indicates that the generated UserSig will expire one day after being generated.
+     * @return string signature string
+     * @throws \Exception
+    */
+
     public function genUserSig( $userid, $expire = 86400*180 ) {
         return $this->__genSig( $userid, $expire, '', false );
     }
@@ -49,6 +59,31 @@ class TLSSigAPIv2 {
     *  - privilegeMap == 1111 1111 == 255 代表该 userid 在该 roomid 房间内的所有功能权限。
     *  - privilegeMap == 0010 1010 == 42  代表该 userid 拥有加入房间和接收音视频数据的权限，但不具备其他权限。
     */
+
+    /**
+     * Function:
+     * Used to issue PrivateMapKey that is optional for room entry.
+     * PrivateMapKey must be used together with UserSig but with more powerful permission control capabilities.
+     *  - UserSig can only control whether a UserID has permission to use the TRTC service. As long as the UserSig is correct, the user with the corresponding UserID can enter or leave any room.
+     *  - PrivateMapKey specifies more stringent permissions for a UserID, including whether the UserID can be used to enter a specific room and perform audio/video upstreaming in the room.
+     * To enable stringent PrivateMapKey permission bit verification, you need to enable permission key in TRTC console > Application Management > Application Info.
+     *
+     * Parameter description:
+     * userid - User ID. The value can be up to 32 bytes in length and contain letters (a-z and A-Z), digits (0-9), underscores (_), and hyphens (-).
+     * roomid - ID of the room to which the specified UserID can enter.
+     * expire - PrivateMapKey expiration time, in seconds. For example, 86400 indicates that the generated PrivateMapKey will expire one day after being generated.
+     * privilegeMap - Permission bits. Eight bits in the same byte are used as the permission switches of eight specific features:
+     *  - Bit 1: 0000 0001 = 1, permission for room creation
+     *  - Bit 2: 0000 0010 = 2, permission for room entry
+     *  - Bit 3: 0000 0100 = 4, permission for audio sending
+     *  - Bit 4: 0000 1000 = 8, permission for audio receiving
+     *  - Bit 5: 0001 0000 = 16, permission for video sending
+     *  - Bit 6: 0010 0000 = 32, permission for video receiving
+     *  - Bit 7: 0100 0000 = 64, permission for substream video sending (screen sharing)
+     *  - Bit 8: 1000 0000 = 200, permission for substream video receiving (screen sharing)
+     *  - privilegeMap == 1111 1111 == 255: Indicates that the UserID has all feature permissions of the room specified by roomid.
+     *  - privilegeMap == 0010 1010 == 42: Indicates that the UserID has only the permissions to enter the room and receive audio/video data.
+     */
 
     public function genPrivateMapKey( $userid, $expire, $roomid, $privilegeMap ) {
         $userbuf = $this->__genUserBuf( $userid, $roomid, $expire, $privilegeMap, 0, '' );
@@ -79,6 +114,31 @@ class TLSSigAPIv2 {
     *  - privilegeMap == 0010 1010 == 42  代表该 userid 拥有加入房间和接收音视频数据的权限，但不具备其他权限。
     */
 
+    /**
+     * Function:
+     * Used to issue PrivateMapKey that is optional for room entry.
+     * PrivateMapKey must be used together with UserSig but with more powerful permission control capabilities.
+     *  - UserSig can only control whether a UserID has permission to use the TRTC service. As long as the UserSig is correct, the user with the corresponding UserID can enter or leave any room.
+     *  - PrivateMapKey specifies more stringent permissions for a UserID, including whether the UserID can be used to enter a specific room and perform audio/video upstreaming in the room.
+     * To enable stringent PrivateMapKey permission bit verification, you need to enable permission key in TRTC console > Application Management > Application Info.
+     *
+     * Parameter description:
+     * @param userid - User ID. The value can be up to 32 bytes in length and contain letters (a-z and A-Z), digits (0-9), underscores (_), and hyphens (-).
+     * @param roomstr - ID of the room to which the specified UserID can enter.
+     * @param expire - PrivateMapKey expiration time, in seconds. For example, 86400 indicates that the generated PrivateMapKey will expire one day after being generated.
+     * @param privilegeMap - Permission bits. Eight bits in the same byte are used as the permission switches of eight specific features:
+     *  - Bit 1: 0000 0001 = 1, permission for room creation
+     *  - Bit 2: 0000 0010 = 2, permission for room entry
+     *  - Bit 3: 0000 0100 = 4, permission for audio sending
+     *  - Bit 4: 0000 1000 = 8, permission for audio receiving
+     *  - Bit 5: 0001 0000 = 16, permission for video sending
+     *  - Bit 6: 0010 0000 = 32, permission for video receiving
+     *  - Bit 7: 0100 0000 = 64, permission for substream video sending (screen sharing)
+     *  - Bit 8: 1000 0000 = 200, permission for substream video receiving (screen sharing)
+     *  - privilegeMap == 1111 1111 == 255: Indicates that the UserID has all feature permissions of the room specified by roomid.
+     *  - privilegeMap == 0010 1010 == 42: Indicates that the UserID has only the permissions to enter the room and receive audio/video data.
+     */
+
     public function genPrivateMapKeyWithStringRoomID( $userid, $expire, $roomstr, $privilegeMap ) {
         $userbuf = $this->__genUserBuf( $userid, 0, $expire, $privilegeMap, 0, $roomstr );
         return $this->__genSig( $userid, $expire, $userbuf, true );
@@ -97,6 +157,13 @@ class TLSSigAPIv2 {
     * @throws \Exception
     */
 
+    /**
+    * base64 encode for url
+    * '+' => '*', '/' => '-', '=' => '_'
+    * @param string $string data to be encoded
+    * @return string The encoded base64 string, returns false on failure
+    * @throws \Exception
+    */
     private function base64_url_encode( $string ) {
         static $replace = Array( '+' => '*', '/' => '-', '=' => '_' );
         $base64 = base64_encode( $string );
@@ -114,6 +181,13 @@ class TLSSigAPIv2 {
     * @throws \Exception
     */
 
+    /**
+    * base64 decode for url
+    * '+' => '*', '/' => '-', '=' => '_'
+    * @param string $base64 base64 string to be decoded
+    * @return string Decoded data, return false on failure
+    * @throws \Exception
+    */
     private function base64_url_decode( $base64 ) {
         static $replace = Array( '+' => '*', '/' => '-', '=' => '_' );
         $string = str_replace( array_values( $replace ), array_keys( $replace ), $base64 );
@@ -134,6 +208,19 @@ class TLSSigAPIv2 {
     * @param dwAccountType 用户类型, 默认为0
     * @param roomStr 字符串房间号
     * @return userbuf string  返回的userbuf
+    */
+
+    /**
+    * User-defined userbuf is used for the encrypted string of TRTC service entry permission
+    * @brief generate userbuf
+    * @param account username
+    * @param dwSdkappid sdkappid
+    * @param dwAuthID  digital room number
+    * @param dwExpTime Expiration time: The expiration time of the encrypted string of this permission. Expiration time = now+dwExpTime
+    * @param dwPrivilegeMap User permissions, 255 means all permissions
+    * @param dwAccountType User type, default is 0
+    * @param roomStr String room number
+    * @return userbuf string  returned userbuf
     */
 
     private function __genUserBuf( $account, $dwAuthID, $dwExpTime, $dwPrivilegeMap, $dwAccountType,$roomStr ) {
@@ -178,6 +265,15 @@ class TLSSigAPIv2 {
     * @return string base64 后的 sig
     */
 
+    /**
+    * Use hmac sha256 to generate sig field content, base64 encoded
+    * @param $identifier Username, utf-8 encoded
+    * @param $curr_time The unix timestamp of the current generated sig
+    * @param $expire Validity period, in seconds
+    * @param $base64_userbuf base64 encoded userbuf
+    * @param $userbuf_enabled 是No enable userbuf
+    * @return string sig after base64
+    */
     private function hmacsha256( $identifier, $curr_time, $expire, $base64_userbuf, $userbuf_enabled ) {
         $content_to_be_signed = 'TLS.identifier:' . $identifier . "\n"
         . 'TLS.sdkappid:' . $this->sdkappid . "\n"
@@ -199,7 +295,17 @@ class TLSSigAPIv2 {
     * @return string 签名字符串
     * @throws \Exception
     */
-
+    
+    /**
+    * Generate signature.
+    *
+    * @param $identifier user account
+    * @param int $expire Expiration time, in seconds, default 180 days
+    * @param $userbuf base64 encoded userbuf
+    * @param $userbuf_enabled Whether to enable userbuf
+    * @return string signature string
+    * @throws \Exception
+    */
     private function __genSig( $identifier, $expire, $userbuf, $userbuf_enabled ) {
         $curr_time = time();
         $sig_array = Array(
@@ -241,6 +347,19 @@ class TLSSigAPIv2 {
     * @param string $userbuf 返回的用户数据
     * @param string $error_msg 失败时的错误信息
     * @return boolean 验证是否成功
+    * @throws \Exception
+    */
+
+     /**
+    * Verify signature.
+    *
+    * @param string $sig Signature content
+    * @param string $identifier Need to authenticate user name, utf-8 encoding
+    * @param int $init_time Returned generation time, unix timestamp
+    * @param int $expire_time Return the validity period, in seconds
+    * @param string $userbuf returned user data
+    * @param string $error_msg error message on failure
+    * @return boolean Verify success
     * @throws \Exception
     */
 
@@ -310,6 +429,17 @@ class TLSSigAPIv2 {
     * @throws \Exception
     */
 
+    /**
+    * Verify signature with userbuf.
+    *
+    * @param string $sig Signature content
+    * @param string $identifier Need to authenticate user name, utf-8 encoding
+    * @param int $init_time Returned generation time, unix timestamp
+    * @param int $expire_time Return the validity period, in seconds
+    * @param string $error_msg error message on failure
+    * @return boolean Verify success
+    * @throws \Exception
+    */
     public function verifySig( $sig, $identifier, &$init_time, &$expire_time, &$error_msg ) {
         $userbuf = '';
         return $this->__verifySig( $sig, $identifier, $init_time, $expire_time, $userbuf, $error_msg );
@@ -327,6 +457,17 @@ class TLSSigAPIv2 {
     * @throws \Exception
     */
 
+    /**
+    * Verify signature
+    * @param string $sig Signature content
+    * @param string $identifier Need to authenticate user name, utf-8 encoding
+    * @param int $init_time Returned generation time, unix timestamp
+    * @param int $expire_time Return the validity period, in seconds
+    * @param string $userbuf returned user data
+    * @param string $error_msg error message on failure
+    * @return boolean Verify success
+    * @throws \Exception
+    */
     public function verifySigWithUserBuf( $sig, $identifier, &$init_time, &$expire_time, &$userbuf, &$error_msg ) {
         return $this->__verifySig( $sig, $identifier, $init_time, $expire_time, $userbuf, $error_msg );
     }
